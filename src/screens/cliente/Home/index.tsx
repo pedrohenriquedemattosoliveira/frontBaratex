@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Input } from '../../../components/common/Input';
 import { Card } from '../../../components/common/Card';
 import { theme } from '../../../config/theme';
-import { Prestador, HomeStackParamList } from '../../../types';
+import { HomeStackParamList } from '../../../types';
+import { oficinaService, OficinaApi } from '../../../services/oficinaService';
 import { formatCnpj } from '../../../utils/formatters';
 import { styles } from './styles';
 
@@ -21,36 +22,36 @@ const CATEGORIAS = [
   { id: '6', name: 'Ar Cond.', icon: 'snow-outline' },
 ];
 
-const MOCK_PRESTADORES: Prestador[] = [
-  {
-    id: 1,
-    razao_social: 'Oficina Mecânica Silva LTDA',
-    nome_fantasia: 'Auto Center Silva',
-    cnpj: '12345678000195',
-    latitude: -23.55052,
-    longitude: -46.633308,
-    distancia_km: 1.2,
-    avaliacao: 4.8,
-    endereco: 'Rua das Flores, 123 - Centro',
-    especialidades: ['Freios', 'Suspensão', 'Troca de Óleo'],
-  },
-  {
-    id: 2,
-    razao_social: 'Mecânica e Elétrica Speed LTDA',
-    nome_fantasia: 'Speed Auto Elétrica',
-    cnpj: '98765432000110',
-    latitude: -23.55152,
-    longitude: -46.634308,
-    distancia_km: 3.5,
-    avaliacao: 4.5,
-    endereco: 'Av. Brasil, 450 - Jardim América',
-    especialidades: ['Injeção Eletrônica', 'Baterias', 'Ar Condicionado'],
-  },
-];
-
 export const HomeScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [busca, setBusca] = useState('');
+  const [oficinas, setOficinas] = useState<OficinaApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+
+  const carregar = () => {
+    setLoading(true);
+    setErro('');
+    oficinaService
+      .listar()
+      .then(setOficinas)
+      .catch((e) => setErro(e?.message || 'Erro ao carregar oficinas.'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(carregar, []);
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return oficinas;
+    return oficinas.filter(
+      (o) =>
+        o.nomeFantasia?.toLowerCase().includes(q) ||
+        o.razaoSocial?.toLowerCase().includes(q) ||
+        o.cidade?.toLowerCase().includes(q) ||
+        o.bairro?.toLowerCase().includes(q)
+    );
+  }, [oficinas, busca]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -107,7 +108,21 @@ export const HomeScreen = () => {
         </View>
 
         <View style={styles.workshopsList}>
-          {MOCK_PRESTADORES.map((item) => (
+          {loading && <ActivityIndicator style={{ marginTop: 24 }} color={theme.colors.primary} />}
+
+          {!loading && !!erro && (
+            <TouchableOpacity onPress={carregar} style={{ padding: 16 }}>
+              <Text style={{ color: theme.colors.error, textAlign: 'center' }}>{erro}{'\n'}Toque para tentar novamente</Text>
+            </TouchableOpacity>
+          )}
+
+          {!loading && !erro && filtradas.length === 0 && (
+            <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, marginTop: 24 }}>
+              Nenhuma oficina encontrada.
+            </Text>
+          )}
+
+          {filtradas.map((item) => (
             <Card
               key={item.id}
               style={styles.card}
@@ -115,24 +130,21 @@ export const HomeScreen = () => {
             >
               <View style={styles.cardHeader}>
                 <View style={styles.workshopLogo}>
-                  <Text style={styles.workshopLogoText}>{item.nome_fantasia.substring(0, 2)}</Text>
+                  <Text style={styles.workshopLogoText}>{item.nomeFantasia.substring(0, 2).toUpperCase()}</Text>
                 </View>
 
                 <View style={styles.workshopInfo}>
-                  <Text style={styles.workshopName}>{item.nome_fantasia}</Text>
+                  <Text style={styles.workshopName}>{item.nomeFantasia}</Text>
                   <View style={styles.ratingRow}>
-                    <Text style={styles.ratingText}>★ {item.avaliacao}</Text>
-                    <Text style={styles.distanceText}>• {item.distancia_km} km • CNPJ {formatCnpj(item.cnpj)}</Text>
+                    <Text style={styles.distanceText}>
+                      {[item.bairro, item.cidade].filter(Boolean).join(' • ')}
+                      {item.cnpj ? ` • CNPJ ${formatCnpj(item.cnpj)}` : ''}
+                    </Text>
                   </View>
                   <View style={styles.badgeVerified}>
                     <Text style={styles.badgeVerifiedText}>Prestador Verificado BARATEX</Text>
                   </View>
                 </View>
-              </View>
-
-              <View style={styles.servicesSummary}>
-                <Text style={styles.priceStarting}>Serviços a partir de</Text>
-                <Text style={styles.priceValue}>R$ 80,00</Text>
               </View>
             </Card>
           ))}

@@ -1,25 +1,37 @@
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/common/Button';
 import { HomeStackParamList } from '../../../types';
+import { OficinaApi, ServicoApi, oficinaService } from '../../../services/oficinaService';
+import { theme } from '../../../config/theme';
 import { formatCnpj, formatCurrency } from '../../../utils/formatters';
 import { styles } from './styles';
 
 type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'OficinaDetalhes'>;
 type RouteProps = RouteProp<HomeStackParamList, 'OficinaDetalhes'>;
 
-const MOCK_SERVICOS = [
-  { id: 101, nome: 'Troca de Pastilhas de Freio', descricao: 'Inclui pastilhas dianteiras e mão de obra', preco: 180.00 },
-  { id: 102, nome: 'Troca de Óleo + Filtro', descricao: 'Óleo Sintético 5W30 + Filtro de óleo', preco: 220.00 },
-  { id: 103, nome: 'Alinhamento e Balanceamento', descricao: 'Alinhamento 3D + Balanceamento 4 rodas', preco: 120.00 },
-];
-
 export const OficinaDetalhesScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { oficinaId } = route.params;
+
+  const [oficina, setOficina] = useState<OficinaApi | null>(null);
+  const [servicos, setServicos] = useState<ServicoApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    Promise.all([oficinaService.buscar(oficinaId), oficinaService.servicos(oficinaId)])
+      .then(([o, sv]) => {
+        setOficina(o);
+        setServicos(sv);
+      })
+      .catch((e) => setErro(e?.message || 'Erro ao carregar a oficina.'))
+      .finally(() => setLoading(false));
+  }, [oficinaId]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,11 +50,11 @@ export const OficinaDetalhesScreen = () => {
         <View style={styles.storeProfileCard}>
           <View style={styles.storeHeaderRow}>
             <View style={styles.storeAvatar}>
-              <Text style={styles.storeAvatarText}>AC</Text>
+              <Text style={styles.storeAvatarText}>{(oficina?.nomeFantasia ?? '').substring(0, 2).toUpperCase()}</Text>
             </View>
             <View style={styles.storeMainInfo}>
-              <Text style={styles.storeName}>Auto Center Silva</Text>
-              <Text style={styles.cnpjText}>CNPJ: {formatCnpj('12345678000195')}</Text>
+              <Text style={styles.storeName}>{oficina?.nomeFantasia ?? ''}</Text>
+              <Text style={styles.cnpjText}>CNPJ: {oficina?.cnpj ? formatCnpj(oficina.cnpj) : '-'}</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.verifiedBadge}>
                   <Text style={styles.verifiedBadgeText}>Oficina Líder BARATEX</Text>
@@ -51,25 +63,29 @@ export const OficinaDetalhesScreen = () => {
             </View>
           </View>
 
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>★ 4.8</Text>
-              <Text style={styles.statLabel}>Avaliação</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>+250</Text>
-              <Text style={styles.statLabel}>Atendimentos</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>15 min</Text>
-              <Text style={styles.statLabel}>Tempo de Resposta</Text>
-            </View>
-          </View>
+          {!!oficina && (
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 12 }}>
+              {[oficina.logradouro, oficina.numero].filter(Boolean).join(', ')}
+              {oficina.bairro ? ` - ${oficina.bairro}` : ''}
+              {oficina.cidade ? `, ${oficina.cidade}` : ''}
+              {oficina.estado ? `/${oficina.estado}` : ''}
+            </Text>
+          )}
         </View>
 
         <Text style={styles.sectionTitle}>Serviços Oferecidos</Text>
 
-        {MOCK_SERVICOS.map((servico) => (
+        {loading && <ActivityIndicator style={{ marginTop: 24 }} color={theme.colors.primary} />}
+        {!loading && !!erro && (
+          <Text style={{ color: theme.colors.error, textAlign: 'center', margin: 16 }}>{erro}</Text>
+        )}
+        {!loading && !erro && servicos.length === 0 && (
+          <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: 16 }}>
+            Esta oficina ainda não cadastrou serviços.
+          </Text>
+        )}
+
+        {servicos.map((servico) => (
           <TouchableOpacity
             key={servico.id}
             style={styles.serviceCard}
@@ -78,8 +94,8 @@ export const OficinaDetalhesScreen = () => {
           >
             <View style={styles.serviceInfo}>
               <Text style={styles.serviceTitle}>{servico.nome}</Text>
-              <Text style={styles.serviceDescription}>{servico.descricao}</Text>
-              <Text style={styles.servicePrice}>{formatCurrency(servico.preco)}</Text>
+              {!!servico.descricao && <Text style={styles.serviceDescription}>{servico.descricao}</Text>}
+              <Text style={styles.servicePrice}>{formatCurrency(Number(servico.precoBase))}</Text>
             </View>
             <Button
               title="Ver"

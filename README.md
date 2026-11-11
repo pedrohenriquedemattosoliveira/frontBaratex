@@ -54,3 +54,13 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Conexão com o backend (.env)
+
+A URL da API é lida de `EXPO_PUBLIC_API_URL` (veja `.env.example`).
+
+- **Local:** copie `.env.example` para `.env` e ajuste a URL (ex.: `http://localhost:8080`).
+- **Netlify:** *Site settings → Environment variables* → `EXPO_PUBLIC_API_URL=https://sua-api.exemplo.com`.
+  A variável é embutida no build; depois de alterar, faça um novo deploy.
+- O backend precisa liberar a origem do front em `CORS_ALLOWED_ORIGINS`.
+- Não coloque segredos em variáveis `EXPO_PUBLIC_*` (ficam visíveis no bundle).

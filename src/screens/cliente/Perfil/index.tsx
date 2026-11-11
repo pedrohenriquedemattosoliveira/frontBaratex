@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
 import { theme } from '../../../config/theme';
+import { useAuth } from '../../../contexts/AuthContext';
 import { styles } from './styles';
 
 interface PerfilScreenProps {
@@ -13,6 +14,13 @@ interface PerfilScreenProps {
 
 export const PerfilScreen: React.FC<PerfilScreenProps> = ({ onLogout }) => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const iniciais = (user?.nome ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -24,11 +32,11 @@ export const PerfilScreen: React.FC<PerfilScreenProps> = ({ onLogout }) => {
 
         <Card style={styles.userCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>PS</Text>
+            <Text style={styles.avatarText}>{iniciais || '?'}</Text>
           </View>
           <View>
-            <Text style={styles.userName}>Pedro Silva</Text>
-            <Text style={styles.userEmail}>pedro.silva@email.com</Text>
+            <Text style={styles.userName}>{user?.nome}</Text>
+            <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
         </Card>
 

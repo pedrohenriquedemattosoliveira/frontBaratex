@@ -1,35 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { FlatList, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../../components/common/Button';
 import { Card } from '../../../components/common/Card';
 import { theme } from '../../../config/theme';
-import { formatKm } from '../../../utils/formatters';
+import { useVeiculos } from '../../../hooks/use-veiculos';
 import { styles } from './styles';
 
-const MOCK_VEICULOS = [
-  {
-    id: '1',
-    marca: 'Chevrolet',
-    modelo: 'Onix 1.0 Turbo',
-    ano: 2022,
-    placa: 'ABC-1234',
-    quilometragem: 45000,
-    principal: true,
-  },
-  {
-    id: '2',
-    marca: 'Honda',
-    modelo: 'Civic 2.0 EXL',
-    ano: 2020,
-    placa: 'XYZ-9876',
-    quilometragem: 62000,
-    principal: false,
-  },
-];
-
 export const MeusVeiculosScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
+  const { veiculos, loading, erro } = useVeiculos();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,8 +21,12 @@ export const MeusVeiculosScreen = () => {
       </View>
 
       <View style={styles.content}>
+        {loading && <ActivityIndicator style={{ marginTop: 24 }} color={theme.colors.primary} />}
+        {!loading && !!erro && (
+          <Text style={{ color: theme.colors.error, textAlign: 'center', margin: 16 }}>{erro}</Text>
+        )}
         <FlatList
-          data={MOCK_VEICULOS}
+          data={veiculos}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
@@ -54,17 +38,12 @@ export const MeusVeiculosScreen = () => {
                 <View style={styles.vehicleMainInfo}>
                   <Text style={styles.vehicleModel}>{item.marca} {item.modelo}</Text>
                   <Text style={styles.vehiclePlate}>Placa: {item.placa}</Text>
-                  {item.principal && (
-                    <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>Veículo Principal</Text>
-                    </View>
-                  )}
                 </View>
               </View>
 
               <View style={styles.detailsRow}>
                 <Text style={styles.detailText}>Ano: {item.ano}</Text>
-                <Text style={styles.detailText}>KM: {formatKm(item.quilometragem)}</Text>
+                {!!item.cor && <Text style={styles.detailText}>Cor: {item.cor}</Text>}
               </View>
             </Card>
           )}
@@ -74,7 +53,7 @@ export const MeusVeiculosScreen = () => {
           title="+ Cadastrar Novo Veículo"
           variant="primary"
           style={styles.addButton}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Garagem', { screen: 'CadastroVeiculo' })}
         />
       </View>
     </SafeAreaView>

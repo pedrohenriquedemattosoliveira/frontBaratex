@@ -1,38 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { FlatList, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
 import { Card } from '../../../components/common/Card';
 import { theme } from '../../../config/theme';
 import { GaragemStackParamList } from '../../../types';
-import { formatKm, formatPlaca } from '../../../utils/formatters';
+import { formatPlaca } from '../../../utils/formatters';
+import { useVeiculos } from '../../../hooks/use-veiculos';
 import { styles } from './styles';
 
 type NavigationProp = NativeStackNavigationProp<GaragemStackParamList, 'GaragemList'>;
 
-const MOCK_MEUS_CARROS = [
-  {
-    id: 101,
-    marca: 'Chevrolet',
-    modelo: 'Onix 1.0 Turbo',
-    ano: 2022,
-    placa: 'ABC1D23',
-    quilometragem: 45000,
-    totalManutencoes: 3,
-  },
-  {
-    id: 102,
-    marca: 'Honda',
-    modelo: 'Civic 2.0 EXL',
-    ano: 2020,
-    placa: 'XYZ9876',
-    quilometragem: 62000,
-    totalManutencoes: 1,
-  },
-];
-
 export const GaragemScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { veiculos, loading, erro, recarregar } = useVeiculos();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,8 +37,19 @@ export const GaragemScreen = () => {
         <Text style={styles.subtitle}>
           Selecione um veículo para consultar o histórico de manutenções
         </Text>
+        {loading && <ActivityIndicator style={{ marginTop: 24 }} color={theme.colors.primary} />}
+        {!loading && !!erro && (
+          <TouchableOpacity onPress={recarregar} style={{ padding: 16 }}>
+            <Text style={{ color: theme.colors.error, textAlign: 'center' }}>{erro}{'\n'}Toque para tentar novamente</Text>
+          </TouchableOpacity>
+        )}
+        {!loading && !erro && veiculos.length === 0 && (
+          <Text style={{ textAlign: 'center', color: theme.colors.textSecondary, marginTop: 24 }}>
+            Nenhum veículo cadastrado. Toque no botão acima para adicionar.
+          </Text>
+        )}
         <FlatList
-          data={MOCK_MEUS_CARROS}
+          data={veiculos}
           keyExtractor={(item) => item.id.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }} // Espaço extra para a TabBar flutuante
@@ -80,14 +72,12 @@ export const GaragemScreen = () => {
                 <View style={styles.carInfo}>
                   <Text style={styles.carName}>{item.marca} {item.modelo} ({item.ano})</Text>
                   <Text style={styles.carPlate}>Placa: {formatPlaca(item.placa)}</Text>
-                  <Text style={styles.carKm}>KM atual: {formatKm(item.quilometragem)}</Text>
+                  {!!item.cor && <Text style={styles.carKm}>Cor: {item.cor}</Text>}
                 </View>
               </View>
 
               <View style={styles.cardFooter}>
-                <Text style={styles.historyBadgeText}>
-                  📋 {item.totalManutencoes} registro(s) de manutenção
-                </Text>
+                <Text style={styles.historyBadgeText}>📋 Ver histórico de manutenção</Text>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.primary} />
               </View>
             </Card>

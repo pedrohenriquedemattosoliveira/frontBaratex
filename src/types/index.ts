@@ -1,26 +1,27 @@
 export type TipoUsuario = 'CLIENTE' | 'PRESTADOR';
 
 export interface Usuario {
-  id: number;
+  id: string;
   nome: string;
   email: string;
   tipo: TipoUsuario;
-  prestador_id?: number;
+  prestador_id?: string;
 }
 
 export interface Veiculo {
-  id: number;
+  id: string;
   marca: string;
   modelo: string;
   ano: number;
   placa: string;
-  quilometragem: number;
+  cor?: string | null;
+  quilometragem?: number;
   combustivel?: string;
   totalManutencoes?: number;
 }
 
 export interface Prestador {
-  id: number;
+  id: string;
   razao_social: string;
   nome_fantasia: string;
   cnpj: string;
@@ -34,8 +35,8 @@ export interface Prestador {
 }
 
 export interface RegistroGaragemVirtual {
-  id: number;
-  veiculo_id: number;
+  id: string;
+  veiculo_id: string;
   data_registro: string;
   quilometragem: number;
   observacao_tecnica: string;
@@ -54,18 +55,18 @@ export interface MensagemChat {
 
 export type GaragemStackParamList = {
   GaragemList: undefined;
-  HistoricoVeiculo: { veiculoId: number; modelo: string; placa: string };
+  HistoricoVeiculo: { veiculoId: string; modelo: string; placa: string };
   CadastroVeiculo: { veiculo?: Veiculo } | undefined;
 };
 
 export type HomeStackParamList = {
   HomeList: undefined;
-  OficinaDetalhes: { oficinaId: number };
-  ServicoDetalhes: { servicoId: number; oficinaId: number };
-  AgendamentoCheckout: { servicoId: number; prestadorId: number; servicoNome: string; valor: number };
-  ChatPrestador: { prestadorId: number; prestadorNome: string };
-  StatusServico: { agendamentoId: number };
-  AvaliacaoPrestador: { prestadorId: number; prestadorNome: string };
+  OficinaDetalhes: { oficinaId: string };
+  ServicoDetalhes: { servicoId: string; oficinaId: string };
+  AgendamentoCheckout: { servicoId: string; prestadorId: string; servicoNome: string; valor: number };
+  ChatPrestador: { prestadorId: string; prestadorNome: string };
+  StatusServico: { agendamentoId: string };
+  AvaliacaoPrestador: { prestadorId: string; prestadorNome: string };
 };
 
 export type PerfilStackParamList = {
